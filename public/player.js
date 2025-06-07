@@ -1,6 +1,7 @@
 class MIDIPlayer {
   constructor() {
     this.context = new (window.AudioContext || window.webkitAudioContext)();
+    this.synth = new SpessaSynth(this.context);
     this.tracks = [];
     this.division = 480; // default ticks per beat
     this.tempo = 1; // multiplier
@@ -36,14 +37,7 @@ class MIDIPlayer {
       track.events.forEach(ev => {
         const time = this.startTime + ev.time * tickDuration / this.tempo;
         if (ev.type === 0x90 && ev.velocity > 0) {
-          const freq = 440 * Math.pow(2, (ev.note + this.keyShift - 69) / 12);
-          const osc = this.context.createOscillator();
-          const gain = this.context.createGain();
-          osc.frequency.value = freq;
-          gain.gain.value = ev.velocity / 127;
-          osc.connect(gain).connect(this.context.destination);
-          osc.start(time);
-          osc.stop(time + 1); // 1s duration
+          const osc = this.synth.trigger(ev.note + this.keyShift, ev.velocity, time);
           this.scheduled.push(osc);
         }
       });
